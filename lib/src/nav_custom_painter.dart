@@ -1,17 +1,31 @@
 import 'package:flutter/material.dart';
 
-class NavCustomPainter extends CustomPainter {
-  late double loc;
-  late double s;
+class CurvedNavPainter extends CustomPainter {
   Color color;
+  late double loc;
   TextDirection textDirection;
+  final double indicatorSize;
+  final Color indicatorColor;
+  double borderRadius;
 
-  NavCustomPainter(
-      double startingLoc, int itemsLength, this.color, this.textDirection) {
-    final span = 1.0 / itemsLength;
-    s = 0.2;
-    double l = startingLoc + (span - s) / 2;
-    loc = textDirection == TextDirection.rtl ? 0.8 - l : l;
+  CurvedNavPainter({
+    required double startingLoc,
+    required int itemsLength,
+    required this.color,
+    required this.textDirection,
+    this.indicatorColor = Colors.lightBlue,
+    this.indicatorSize = 5,
+    this.borderRadius = 25,
+  }) {
+    // Calculate base location
+    double baseLoc = 1.0 / itemsLength * (startingLoc + 0.48);
+    
+    // Adjust for RTL direction
+    if (textDirection == TextDirection.rtl) {
+      loc = 1.0 - baseLoc;
+    } else {
+      loc = baseLoc;
+    }
   }
 
   @override
@@ -20,30 +34,60 @@ class NavCustomPainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.fill;
 
+    final circlePaint = Paint()
+      ..color = indicatorColor
+      ..style = PaintingStyle.fill;
+
+    final height = size.height;
+    final width = size.width;
+
+    const s = 0.06;
+    const depth = 0.24;
+    final valleyWith = indicatorSize + 5;
+
+    // Calculate the center of the curved area
+    final curveCenter = loc * width;
+
     final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo((loc - 0.1) * size.width, 0)
+      // top Left Corner
+      ..moveTo(0, borderRadius)
+      ..quadraticBezierTo(0, 0, borderRadius, 0)
+      ..lineTo(curveCenter - valleyWith * 2, 0)
       ..cubicTo(
-        (loc + s * 0.20) * size.width,
+        curveCenter - valleyWith + s * 0.20 * size.width,
         size.height * 0.05,
-        loc * size.width,
-        size.height * 0.60,
-        (loc + s * 0.50) * size.width,
-        size.height * 0.60,
+        curveCenter - valleyWith,
+        size.height * depth,
+        curveCenter - valleyWith + s * 0.50 * size.width,
+        size.height * depth,
       )
       ..cubicTo(
-        (loc + s) * size.width,
-        size.height * 0.60,
-        (loc + s - s * 0.20) * size.width,
-        size.height * 0.05,
-        (loc + s + 0.1) * size.width,
+        curveCenter + valleyWith - s * 0.20 * size.width,
+        size.height * depth,
+        curveCenter + valleyWith,
+        0,
+        curveCenter + valleyWith + s * 0.60 * size.width,
         0,
       )
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
+
+      // top right corner
+      ..lineTo(size.width - borderRadius, 0)
+      ..quadraticBezierTo(width, 0, width, borderRadius)
+
+      // bottom right corner
+      ..lineTo(width, height - borderRadius)
+      ..quadraticBezierTo(width, height, width - borderRadius, height)
+
+      // bottom left corner
+      ..lineTo(borderRadius, height)
+      ..quadraticBezierTo(0, height, 0, height - borderRadius)
       ..close();
+
     canvas.drawPath(path, paint);
+
+    // Draw the dot at the exact center of the curved area
+    canvas.drawCircle(
+        Offset(curveCenter, indicatorSize), indicatorSize, circlePaint);
   }
 
   @override
